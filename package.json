@@ -2,15 +2,15 @@
   "$schema": "https://www.raycast.com/schemas/extension.json",
   "name": "what-happened-today",
   "title": "What Happened Today",
-  "description": "",
+  "description": "Discover historical events, notable birthdays, and milestones on any date.",
   "icon": "extension-icon.png",
   "author": "nikhil_tiwari",
   "license": "MIT",
   "commands": [
     {
-      "name": "gettoday",
-      "title": "getToday",
-      "description": "",
+      "name": "getEventsToday",
+      "title": "This Day In History",
+      "description": "Get the historical events that happened on this day.",
       "mode": "view"
     }
   ],
