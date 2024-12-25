@@ -3,12 +3,12 @@
   "name": "what-happened-today",
   "title": "What Happened Today",
   "description": "Discover historical events, notable birthdays, and milestones on any date.",
-  "icon": "extension-icon.png",
+  "icon": "extension-icon1.png",
   "author": "nikhil_tiwari",
   "license": "MIT",
   "commands": [
     {
-      "name": "getEventsToday",
+      "name": "get-events-today",
       "title": "This Day In History",
       "description": "Get the historical events that happened on this day.",
       "mode": "view"

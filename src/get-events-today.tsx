@@ -1,7 +1,8 @@
-import { Action, ActionPanel, Color, Detail, Icon, List, ToastStyle, showToast } from "@raycast/api";
+import { Action, ActionPanel, Color, Detail, Icon, List, Toast, showToast } from "@raycast/api";
 import { useEffect, useState } from "react";
 
 import fetch from "node-fetch";
+import { validDates } from "./valid-dates";
 
 function detailViewOfOnThisDay(onThisDay: WikipediaOnThisDay, date: Date) {
   const dateMarkdown = "## " + dateGetMonthAndDay(date) + ", " + onThisDay.year.toString();
@@ -10,7 +11,7 @@ function detailViewOfOnThisDay(onThisDay: WikipediaOnThisDay, date: Date) {
   const pageDataMarkdown = onThisDay.pages
     .map((page) => `### [${page.title}](${page.pageUrl})\n\n${page.extract}\n\n![Image](${page.imageUrl})\n`)
     .join("\n---\n");
-    
+
   return (
     <Detail markdown={dateMarkdown + "\n" + eventDetails + "\n" + relatedArticlesMarkdown + "\n" + pageDataMarkdown} />
   );
@@ -26,7 +27,6 @@ function WikipediaOnThisDayListItem({ story, date }: { story: WikipediaOnThisDay
   return (
     <List.Item
       key={story.title}
-      // title={story.title.substring(0, 80) + (story.title.length > 80 ? "..." : "")}
       title={story.title}
       accessories={[
         { tag: story.year.toString() },
@@ -80,6 +80,7 @@ export default function Command() {
   const [wikipediaStories, setWikipediaStories] = useState<WikipediaOnThisDay[]>([]);
   const [error, setError] = useState<Error>();
   const [date, setDate] = useState<Date>(new Date());
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
   useEffect(() => {
     async function getWikipediaStories() {
@@ -99,7 +100,7 @@ export default function Command() {
             pageUrl: subItem.content_urls.desktop.page,
             imageUrl: subItem.thumbnail?.source || "",
           }));
-
+          setIsLoading(false);
           return {
             year: item.year,
             title: item.text,
@@ -114,24 +115,47 @@ export default function Command() {
         console.error("Error loading Wikipedia stories", error);
       }
     }
-    getWikipediaStories();
 
     if (error) {
-      showToast(ToastStyle.Failure, "Failed to load Wikipedia stories", error.message);
+      console.error(error.message);
+      showToast(Toast.Style.Failure, "Failed to load Wikipedia stories", error.message);
+    } else {
+      getWikipediaStories();
     }
-  }, []);
+  }, [error, date]);
+
+  function dateChanged(newDate: string): void {
+    setIsLoading(true);
+    setError(undefined);
+    setDate(new Date(newDate));
+  }
 
   return (
     <List
-      isLoading={wikipediaStories.length === 0}
+      isLoading={!error && isLoading}
       navigationTitle="Wikipedia On This Day"
       searchBarPlaceholder="Filter stories by title..."
+      searchBarAccessory={
+        <List.Dropdown
+          tooltip="Select a date (MM/DD)"
+          defaultValue={date.toDateString()}
+          onChange={(newDate) => dateChanged(newDate)}
+        >
+          {validDates.map((date) => (
+            <List.Dropdown.Item title={date.toDateString()} value={date.toDateString()} />
+          ))}
+        </List.Dropdown>
+      }
     >
-      <List.Section title={dateGetMonthAndDay(date)}>
-        {wikipediaStories.map((story) => (
-          <WikipediaOnThisDayListItem key={story.title} story={story} date={date} />
-        ))}
-      </List.Section>
+      {isLoading && <List.EmptyView title="Loading..." />}
+      {!isLoading && error && <List.EmptyView title="An error occurred" />}
+      {!isLoading && !error && (
+        <List.Section title={dateGetMonthAndDay(date)}>
+          {wikipediaStories.map((story) => (
+            <WikipediaOnThisDayListItem key={story.title} story={story} date={date} />
+          ))}
+        </List.Section>
+      )}
     </List>
   );
 }
