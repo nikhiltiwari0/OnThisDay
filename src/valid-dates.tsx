@@ -1,14 +1,14 @@
-const LEAP_YEAR = 2024; 
+const LEAP_YEAR = 2024;
 const MONTHS_IN_YEAR = 12;
 
 export const getDaysInMonth = (month: number) => {
-    const date = new Date(LEAP_YEAR, month, 1);
-    const days = [];
-    while (date.getMonth() === month) {
-      days.push(new Date(date));
-      date.setDate(date.getDate() + 1);
-    }
-    return days;
+  const date = new Date(LEAP_YEAR, month, 1);
+  const days = [];
+  while (date.getMonth() === month) {
+    days.push(new Date(date));
+    date.setDate(date.getDate() + 1);
+  }
+  return days;
 };
 
 const getAllValidDates = () => {
@@ -20,6 +20,6 @@ const getAllValidDates = () => {
     }
   }
   return validDates;
-}
+};
 
 export const validDates = getAllValidDates();

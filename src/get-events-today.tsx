@@ -1,4 +1,5 @@
 import { Action, ActionPanel, Color, Detail, Icon, List, Toast, showToast } from "@raycast/api";
+import { ApiResponse, OnThisDayJson, WikipediaOnThisDay, WikipediaPage, WikipediaPageJson } from "./types";
 import { useEffect, useState } from "react";
 
 import fetch from "node-fetch";
@@ -6,10 +7,15 @@ import { validDates } from "./valid-dates";
 
 function detailViewOfOnThisDay(onThisDay: WikipediaOnThisDay, date: Date) {
   const dateMarkdown = "## " + dateGetMonthAndDay(date) + ", " + onThisDay.year.toString();
-  const eventDetails = "### " + onThisDay.title;
+  const eventDetails = "### " + onThisDay.eventDescription;
   const relatedArticlesMarkdown = "### " + `Related Articles (${onThisDay.pages.length.toString()})`;
   const pageDataMarkdown = onThisDay.pages
-    .map((page) => `### [${page.title}](${page.pageUrl})\n\n${page.extract}\n\n![Image](${page.imageUrl})\n`)
+    .map(
+      (page: WikipediaPage) =>
+        `### [${page.title}](${page.pageUrl})
+        \n\n${page.extract}
+        \n\n![Image](${page.imageUrl})\n`,
+    )
     .join("\n---\n");
 
   return (
@@ -26,8 +32,8 @@ function dateGetMonthAndDay(date: Date) {
 function WikipediaOnThisDayListItem({ story, date }: { story: WikipediaOnThisDay; date: Date }) {
   return (
     <List.Item
-      key={story.title}
-      title={story.title}
+      key={story.eventDescription}
+      title={story.eventDescription}
       accessories={[
         { tag: story.year.toString() },
         { tag: { value: story.pages.length.toString(), color: Color.Blue }, icon: Icon.Document },
@@ -39,41 +45,6 @@ function WikipediaOnThisDayListItem({ story, date }: { story: WikipediaOnThisDay
       }
     />
   );
-}
-
-interface WikipediaOnThisDay {
-  year: number;
-  pages: WikipediaPage[];
-  title: string;
-}
-
-interface WikipediaPage {
-  title: string;
-  extract: string;
-  pageUrl: string;
-  imageUrl: string;
-}
-
-// JSON response from the Wikipedia API
-interface WikipediaPageJson {
-  normalizedtitle: string;
-  extract: string;
-  content_urls: {
-    desktop: {
-      page: string;
-    };
-  };
-  thumbnail: {
-    source: string;
-  };
-}
-
-interface ApiResponse {
-  onthisday: {
-    text: string;
-    pages: WikipediaPageJson[];
-    year: number;
-  }[];
 }
 
 export default function Command() {
@@ -91,10 +62,8 @@ export default function Command() {
         const response = await fetch(`https://api.wikimedia.org/feed/v1/wikipedia/en/featured/${year}/${month}/${day}`);
         const data = (await response.json()) as ApiResponse;
         const onThisDay = data.onthisday;
-        console.log(data);
-        console.log("-----------------------" + onThisDay);
-        const wikipediaPages: WikipediaOnThisDay[] = onThisDay.map((item) => {
-          const subpages = item.pages.map((subItem) => ({
+        const wikipediaPages: WikipediaOnThisDay[] = onThisDay.map((item: OnThisDayJson) => {
+          const subpages: WikipediaPage[] = item.pages.map((subItem: WikipediaPageJson) => ({
             title: subItem.normalizedtitle,
             extract: subItem.extract,
             pageUrl: subItem.content_urls.desktop.page,
@@ -103,12 +72,11 @@ export default function Command() {
           setIsLoading(false);
           return {
             year: item.year,
-            title: item.text,
+            eventDescription: item.text,
             pages: subpages,
           };
         });
 
-        console.log(wikipediaPages);
         setWikipediaStories(wikipediaPages);
       } catch (error) {
         setError(new Error("Error loading Wikipedia stories" + error));
@@ -117,7 +85,6 @@ export default function Command() {
     }
 
     if (error) {
-      console.error(error.message);
       showToast(Toast.Style.Failure, "Failed to load Wikipedia stories", error.message);
     } else {
       getWikipediaStories();
@@ -147,12 +114,12 @@ export default function Command() {
         </List.Dropdown>
       }
     >
-      {isLoading && <List.EmptyView title="Loading..." />}
-      {!isLoading && error && <List.EmptyView title="An error occurred" />}
+      {isLoading && !error && <List.EmptyView title="Loading..." />}
+      {!isLoading && error && <List.EmptyView title="An error occurred" key={error.message} />}
       {!isLoading && !error && (
         <List.Section title={dateGetMonthAndDay(date)}>
           {wikipediaStories.map((story) => (
-            <WikipediaOnThisDayListItem key={story.title} story={story} date={date} />
+            <WikipediaOnThisDayListItem key={story.eventDescription} story={story} date={date} />
           ))}
         </List.Section>
       )}
